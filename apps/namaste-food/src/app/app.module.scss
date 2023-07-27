@@ -1,1 +1,28 @@
 /* Your styles goes here. */
+.navMain {
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    column-gap: 2%;
+    flex-wrap: wrap;
+    list-style-type: none;
+    font-size: 15px;
+}
+
+.logoContainer {
+    width: 60px
+} 
+.header {
+    border: 2px solid red;
+}
+
+.content {
+    color: green;
+    font-family: 'Trebuchet MS', 'Lucida Sans Unicode', 'Lucida Grande', 'Lucida Sans', Arial, sans-serif;
+}
+.flex-party {
+    display: flex;
+    flex-wrap: wrap;
+    flex-direction: row;
+    column-gap: 2px;
+}
