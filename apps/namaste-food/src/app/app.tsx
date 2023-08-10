@@ -1,16 +1,14 @@
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-import { useEffect, useState } from 'react';
+import React, { MouseEvent, useEffect, useState } from 'react';
 import styles from './app.module.scss';
 
 import AppLayout from './nx-welcome';
+import Header from './header/header';
+import Content from './content/content';
+import Content2 from './content2/content2';
+import FilterButton from './filter-button/filter-button';
+import ShimmerComponent from './shimmer-component/shimmer-component';
 
-interface ContentOverload {
-  content: {
-    step: string;
-    src: string;
-    id: number;
-  };
-}
 let kill = 'one';
 const stepList = [
   {
@@ -39,86 +37,133 @@ const stepList = [
     src: 'https://i.ytimg.com/vi/zZCSTAR-4w0/maxresdefault.jpg',
   },
 ];
-
+const swiggyApi = 'https://www.swiggy.com/dapi/restaurants/list/v5?lat=20.2828003&lng=85.82430529999999&is-seo-homepage-enabled=true&page_type=DESKTOP_WEB_LISTING';
 export function App() {
-  const [stepListSt, setStepListSt] = useState(stepList);
+  //hook variables
+  const [stepListSt, setStepListSt] = useState([]);
+  const [restaurants, setRestaurants] = useState<any[]>([]);
+  const [isLogin, setIsLogin] = useState<boolean>(false);
+  const [ restaurantsArr, setRestaurantsArr ] = useState<any[]>([]);
+
+  //normal variables
+  let x: NodeJS.Timer;
 
   useEffect(() => {
-    setTimeout(() => {
-      console.log('---->');
-      setStepListSt([
-        ...stepList,
-        {
-          id: 6,
-          step: 'Step repeat',
-          src: 'https://i.stack.imgur.com/ocMsR.png',
-        },
-      ]);
-      kill = 'two';
-    }, 7000);
-  }, []);
+    console.log("%c useeffect called 🍌 ", " background: blue; color: white; display: block; font-size:40px;");
+    if(isLogin)
+    fetchData();
+    // setTimeout(() => {
+    //   setStepListSt([
+    //     ...stepListSt,
+    //     {
+    //       id: 6,
+    //       step: 'Step repeat',
+    //       src: 'https://i.stack.imgur.com/ocMsR.png',
+    //     },
+    //   ]);
+    //   kill = 'two';
+    // }, 7000);
+  }, [isLogin]);
 
-  return (
-    <div>
-      <AppLayout title="namaste-food" />
-      <Header />
-      {Content} - {kill}
-      <div className={styles['flex-party']}>
-        {stepListSt.map((stepData, index) => {
-          console.log('stepData-->', stepData);
-          if (stepData) {
-            return <Content2 key={stepData.id} content={stepData} />;
-          } else {
-            return null;
-          }
-        })}
+  function fetchData() {
+    fetch(swiggyApi, {
+      method: "GET", // *GET, POST, PUT, DELETE, etc.
+      headers: {
+        "Content-Type": "application/json",
+        // 'Content-Type': 'application/x-www-form-urlencoded',
+      },
+    }).then(data => data.json()).then(res => {
+      console.log("%c data-->", "background: blue;", res);
+      const r = res?.data?.cards[2]?.card?.card?.gridElements?.infoWithStyle?.restaurants || 
+      res?.data?.cards[1]?.card?.card?.gridElements?.infoWithStyle?.restaurants ||  null ;
+      setRestaurantsArr(r);
+      setRestaurants([...r]);
+      // console.log(restaurants)
+    });
+  }
+  
+  const filterEvent = (event: string) => {
+    const filterRatinglessthan4 = restaurants.filter(data => {
+      return (+data.info.avgRating < 4);
+    })
+    setRestaurants([...filterRatinglessthan4]);
+  }
+
+  const changeLoginState = (event: boolean) => {
+    setIsLogin(!event)
+  }
+
+  const filterCards = (value: string) => {
+    debounceInput(value)
+  }
+
+  const debounceInput = (val: string) => {
+    if (x) { 
+      clearInterval(x);
+    }
+    x = setInterval(() => {
+      if (val.length === 0) {
+        setRestaurants([...restaurantsArr]);
+      } else {
+        const txtFIlteredRestaurant = restaurantsArr.filter(d => {   
+          return d.info.name.toLowerCase().includes(val.toLowerCase())
+        });
+        console.log(txtFIlteredRestaurant)
+        if (txtFIlteredRestaurant.length) {
+          setRestaurants([...txtFIlteredRestaurant])
+        } 
+      }
+      clearInterval(x);
+     }, 1500)
+  }
+
+  const mouseOverP = (e: MouseEvent) => {
+    console.log(e.clientX);
+  }
+  if (restaurants.length === 0 && isLogin) {
+    return (
+      <ShimmerComponent />
+      )
+    } else if(isLogin && restaurants.length) {
+    return (
+      <div>
+        <AppLayout title="namaste-food" />
+        ---------------
+      this is login -
+        {String(isLogin)}
+        --------------
+        <Header login={{ isLogin, changeLoginState}} />
+        {Content} - {kill}
+        <FilterButton buttonClick={filterEvent}/>
+        <div>
+          <input onInput={(e: React.ChangeEvent<HTMLInputElement>) => {filterCards(e.target.value)}} type='text' placeholder='filter'/>
+        </div>
+        {/* <div className={styles['flex-party']}>
+          {stepListSt.map((stepData, index) => {
+            if (stepData) {
+              return <Content2 key={stepData.id} content={stepData} mouseOver={mouseOverP} />;
+            } else {
+              return null;
+            }
+          })}
+        </div> */}
+        <div className={styles['flex-party']}>
+          {restaurants.map((restaurant, index) => {
+            if (restaurant) {
+              return <Content2 key={restaurant.info.id} content={restaurant} mouseOver={mouseOverP} />;
+            } else {
+              return null;
+            }
+          })}
+        </div>
       </div>
-    </div>
-  );
+    );
+  } else {
+    return (<>
+      <Header login={{ isLogin, changeLoginState }} />
+      Yo Login NAW
+    </>)
+  }
 }
-
-const contentStyle = {
-  border: '1px solid blue',
-  backgroundColor: 'grey',
-};
-
-const Header = () => {
-  return (
-    <div className={styles.header}>
-      <div>
-        <img
-          className={styles.logoContainer}
-          src="src/assets/food.jpg"
-          alt=""
-        />
-      </div>
-      <div>
-        <ul className={styles.navMain}>
-          <li>Home</li>
-          <li>Contact US</li>
-          <li>Account</li>
-        </ul>
-      </div>
-    </div>
-  );
-};
-
-const Content = (
-  <div style={contentStyle}>
-    <div>Content</div>
-    <div className={styles.content}>Lorem Ipsum daler mendi</div>
-  </div>
-);
-const Content2 = ({ content }: ContentOverload) => {
-  return (
-    <div className="powerCard">
-      {content.step}: Applying configuration to libraries Lastly, let's update
-      the application's project configuration to point to the postcss.config.js
-      file that we created in step 2. Open up the apps/{'{your app here}'}
-      /project.json file and add the following to the build target.
-      <img src={content.src} alt="kakarotto"></img>
-    </div>
-  );
-};
 
 export default App;
